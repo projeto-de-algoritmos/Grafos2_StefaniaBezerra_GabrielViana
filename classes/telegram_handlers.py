@@ -10,6 +10,7 @@ import db
 from classes.services import Services
 import twitter
 from classes.graph import Graph
+from itertools import islice
 
 TUTORIAL = "https://help.github.com/articles/creating-a-personal-access-token-for-the-command-line/"
 
@@ -88,37 +89,64 @@ class Handler(object):
 
     @classmethod
     def new(cls, bot, update, args):
-        text = ''
-        for each_word in args:
-            text += each_word + ' '
-
-        user = User(chat=update.message.chat_id, screen_name='{}'.format(text),
-                    friends='', tweet_id='')
+        
+        param1 = args[0]
+        # param2 = args[1]
+        # user = User(chat=update.message.chat_id, screen_name='{}'.format(text),
+        #             friends='', tweet_id='')
 
         api = cls.auth()
 
-        user_info = api.GetUser(screen_name='{}'.format(text))
-        statuses = api.GetFriends(screen_name='{}'.format(text))
+        user_info1 = api.GetUser(screen_name=param1)
+        # user_info2 = api.GetUser(screen_name=param2)
+        friends1 = api.GetFriends(screen_name=param1)
+        # friends2 = api.GetFriends(screen_name=param2)
         # print([s.text for s in statuses])
 
         graph = Graph()
-        db.session.add(user)
-        db.session.commit()
+        graph2 = Graph()
+        # db.session.add(user)
+        # db.session.commit()
 
-        messages = []
-        for s in statuses:
-            graph.add_vertex(s.AsDict().get('id'))
+        user_ids = []
+        for s in islice(friends1, 5):
+            current_friend_id = s.AsDict().get('id')
+            print(current_friend_id)
+
+            graph.add_vertex(current_friend_id)
             graph.add_edge({
-                    user_info.AsDict().get('id'), 
-                    s.AsDict().get('id')
+                    user_info1.AsDict().get('id'), 
+                    current_friend_id
                 })
-            message = s.AsDict().get('name')
-            messages.append(message)
+
+            # friends_of_current_friend = api.GetFriends(screen_name=s.AsDict().get('screen_name'))
+            # for s in friends_of_current_friend:
+            #     graph.add_edge({
+            #         current_friend_id,
+            #         s.AsDict().get('id')
+            #     })
+            # user_id = s.AsDict().get('id')
+            # user_ids.append(user_id)
+
+        # for s in friends2:
+        #     graph.add_vertex(s.AsDict().get('id'))
+        #     graph2.add_edge({
+        #             user_info2.AsDict().get('id'), 
+        #             s.AsDict().get('id')
+        #         })
+            # user_id = s.AsDict().get('id')
+            # user_ids.append(user_id)
+
+        # for user_id in user_ids:
+        #     current = api.GetUser(user_id=user_id)
+            
 
         print(graph.edges())
+        print('\n ---------------------------------------------------------------------------------------- \n')
+        print(graph2.edges())
+
         bot.send_message(chat_id=update.message.chat_id,
-                         text="Username[[{}]] {}"
-                         .format(user.id, user.screen_name) + 'abigo stoaki:' + str(messages))
+                         text="abigo stoaki:" + str())
 
     def echo(self, bot, update):
         bot.send_message(chat_id=update.message.chat_id,
